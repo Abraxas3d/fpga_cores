@@ -30,11 +30,10 @@ use work.common_pkg.all;
 ------------------------
 -- Entity declaration --
 ------------------------
-entity axi_stream_width_converter is
+entity axi_embiggener is
   generic (
     INPUT_DATA_WIDTH    : natural := 32;
-    OUTPUT_DATA_WIDTH   : natural := 16;
-    AXI_TID_WIDTH       : natural := 0;
+    OUTPUT_DATA_WIDTH   : natural := 128;
     IGNORE_TKEEP        : boolean := False);
   port (
     -- Usual ports
@@ -44,19 +43,18 @@ entity axi_stream_width_converter is
     s_tready : out std_logic;
     s_tdata  : in  std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
     s_tkeep  : in  std_logic_vector((INPUT_DATA_WIDTH + 7) / 8 - 1 downto 0) := (others => 'U');
-    s_tid    : in  std_logic_vector(AXI_TID_WIDTH - 1 downto 0) := (others => 'U');
     s_tvalid : in  std_logic;
     s_tlast  : in  std_logic;
     -- AXI stream output
     m_tready : in  std_logic;
     m_tdata  : out std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
-    m_tkeep  : out std_logic_vector((OUTPUT_DATA_WIDTH + 7) / 8 - 1 downto 0) := (others => 'U');
-    m_tid    : out std_logic_vector(AXI_TID_WIDTH - 1 downto 0) := (others => 'U');
-    m_tvalid : out std_logic;
-    m_tlast  : out std_logic := '0');
-end axi_stream_width_converter;
+    m_tvalid : out std_logic);
+    -- There are other signals we do not know how to handle yet
+    -- dma_xfer_req : out std_logic;
+    -- m_tlast : out std_logic; -- encoder outputs this signal, but do we really need it?
+end axi_embiggener;
 
-architecture axi_stream_width_converter of axi_stream_width_converter is
+architecture axi_embiggener of axi_embiggener is
 
   ---------------
   -- Constants --
@@ -130,111 +128,46 @@ architecture axi_stream_width_converter of axi_stream_width_converter is
   -------------
   -- Signals --
   -------------
-  signal s_first_word : std_logic;
   signal s_data_valid : std_logic;
   signal m_data_valid : std_logic;
   signal m_tdata_i    : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
   signal s_tready_i   : std_logic;
   signal m_tvalid_i   : std_logic;
-  signal m_tlast_i    : std_logic;
+
+
+
+
+
+
+
+
+
+
 
 begin
 
-  g_pass_through : if INPUT_DATA_WIDTH = OUTPUT_DATA_WIDTH generate -- {{
-    signal s_tid_reg  : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-  begin
+  g_not_upsize : if INPUT_DATA_WIDTH >= OUTPUT_DATA_WIDTH or INPUT_DATA_WIDTH mod 8 /= 0 or OUTPUT_DATA_WIDTH mod INPUT_DATA_WIDTH /= 0 generate -- {{
+    assert False
+      report "Conversion from " & integer'image(INPUT_DATA_WIDTH) & " to " & integer'image(OUTPUT_DATA_WIDTH) & " is not currently supported"
+      severity Failure;
+  end generate g_not_upsize; -- }}
 
-    s_tready_i <= m_tready;
-    m_tdata_i  <= s_tdata;
-    m_tkeep    <= s_tkeep;
-    m_tvalid_i <= s_tvalid;
-    m_tlast_i  <= s_tlast;
-    m_tid      <= s_tid when s_first_word = '1' else s_tid_reg;
 
-    process(clk)
-    begin
-      if rising_edge(clk) then
-        if s_data_valid = '1' and s_first_word = '1' then
-          s_tid_reg <= s_tid;
-        end if;
-      end if;
-    end process;
-
-  end generate g_pass_through; -- }}
-
-  g_downsize : if INPUT_DATA_WIDTH > OUTPUT_DATA_WIDTH generate -- {{
-    signal bit_buffer           : std_logic_vector(INPUT_DATA_WIDTH + OUTPUT_DATA_WIDTH - 1 downto 0);
-    signal size                 : unsigned(numbits(bit_buffer'length) - 0 downto 0);
-    signal flush_req            : boolean;
+  g_upsize : if INPUT_DATA_WIDTH < OUTPUT_DATA_WIDTH generate -- {{
+    -- AI abraxas3d to find out more about generate - thinking it's always with a test
+    
+    signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
     signal input_valid_bytes    : unsigned(numbits(2*INPUT_BYTE_WIDTH) - 1 downto 0);
-    signal input_valid_bits     : integer range 0 to INPUT_DATA_WIDTH;
+    signal big_buffer_next      : std_logic_array_t(0 to OUTPUT_DATA_WIDTH/INPUT_DATA_WIDTH - 1)(INPUT_DATA_WIDTH - 1 downto 0);
+    -- AI abraxas3d can we have mixed types of indices in the std_logic_array_t? hmm?
 
-    -- Debug only stuff to see how bit buffer and size change within the process block
-    signal dbg_write_bit_buffer : std_logic_vector(bit_buffer'range);
-    signal dbg_write_size       : natural range 0 to bit_buffer'length;
-    signal dbg_read_bit_buffer  : std_logic_vector(bit_buffer'range);
-    signal dbg_read_size        : natural range 0 to bit_buffer'length;
-
-    signal bit_buffer_next      : std_logic_array_t(0 to OUTPUT_DATA_WIDTH)(bit_buffer'range);
 
   begin
 
-    -- Calculate where s_tdata should be assigned in the buffer
-    g_bit_buffer_next : for i in 0 to OUTPUT_DATA_WIDTH generate
-      bit_buffer_next(i) <= (bit_buffer'length - 1 downto INPUT_DATA_WIDTH + i => 'U')
-                            & s_tdata
-                            & bit_buffer(i - 1 downto 0);
-    end generate;
-
-    -------------------
-    -- Port mappings --
-    -------------------
-    g_tid_fifo : if AXI_TID_WIDTH > 0 generate
-      signal wr_en : std_logic;
-      signal rd_en : std_logic;
-    begin
-      wr_en <= s_first_word and s_data_valid;
-      rd_en <= m_tlast_i and m_tvalid_i and m_tready;
-
-      -- Need a small FIFO for the TID
-      tid_fifo_u : entity work.sync_fifo
-        generic map (
-          -- FIFO configuration
-          RAM_TYPE           => lut,
-          DEPTH              => 4,
-          DATA_WIDTH         => AXI_TID_WIDTH,
-          UPPER_TRESHOLD     => 3,
-          LOWER_TRESHOLD     => 1,
-          EXTRA_OUTPUT_DELAY => 0)
-        port map (
-          -- Write port
-          clk     => clk,
-          clken   => '1',
-          rst     => rst,
-
-          -- Status
-          full    => open,
-          upper   => open,
-          lower   => open,
-          empty   => open,
-
-          wr_en   => wr_en,
-          wr_data => s_tid,
-
-          -- Read port
-          rd_en   => rd_en,
-          rd_data => m_tid,
-          rd_dv   => open);
-    end generate;
-
-    g_no_tid_fifo : if AXI_TID_WIDTH = 0 generate
-      m_tid <= (others => 'U');
-    end generate;
 
     -- Generate the number of bytes valid depending on the value of TKEEP
     input_valid_bytes <= tkeep_to_byte_count(s_tkeep) when s_tvalid and s_tlast else (others => 'U');
-    input_valid_bits  <= to_integer(input_valid_bytes & "000") when s_tlast = '1' and HANDLE_TKEEP else
-                         INPUT_DATA_WIDTH;
+
 
     ---------------
     -- Processes --
@@ -337,17 +270,11 @@ begin
       end if;
     end process;
 
-  end generate g_downsize; -- }}
-
-  g_upsize : if INPUT_DATA_WIDTH < OUTPUT_DATA_WIDTH generate -- {{
-    assert False
-      report "Conversion from " & integer'image(INPUT_DATA_WIDTH) & " to " & integer'image(OUTPUT_DATA_WIDTH) & " is not currently supported"
-      severity Failure;
   end generate g_upsize; -- }}
 
-  -------------------
-  -- Port mappings --
-  -------------------
+
+
+
 
   ------------------------------
   -- Asynchronous assignments --
@@ -358,26 +285,26 @@ begin
   m_tdata      <= m_tdata_i when m_tvalid_i = '1' else (others => 'U');
   s_tready     <= s_tready_i;
   m_tvalid     <= m_tvalid_i;
-  m_tlast      <= m_tlast_i and m_tvalid_i;
 
-  ---------------
-  -- Processes --
-  ---------------
-  -- First word flagging is common
-  process(clk, rst)
-  begin
-    if rst = '1' then
-      s_first_word <= '1';
-    elsif rising_edge(clk) then
 
-      if s_data_valid = '1' then
-        s_first_word <= s_tlast;
-      end if;
+  -- ---------------
+  -- -- Processes --
+  -- ---------------
+  -- -- First word flagging is common
+  -- process(clk, rst)
+  -- begin
+  --   if rst = '1' then
+  --     s_first_word <= '1';
+  --   elsif rising_edge(clk) then
 
-    end if;
-  end process;
+  --     if s_data_valid = '1' then
+  --       s_first_word <= s_tlast;
+  --     end if;
 
-end axi_stream_width_converter;
+  --   end if;
+  -- end process;
+
+end axi_embiggener;
 
 -- vim: set foldmethod=marker foldmarker=--\ {{,--\ }} :
 
