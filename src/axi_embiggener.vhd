@@ -171,8 +171,8 @@ begin
             next_state <= Load0;
           end if;
         when Load0 =>
-          s_tready_i = '0';
-          m_tvalid_i = '0';
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
           next_state <= Have0;
         when Have0 =>
           s_tready_i <= '1';
