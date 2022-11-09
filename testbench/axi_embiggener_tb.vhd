@@ -56,7 +56,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   constant CLK_PERIOD        : time := 5 ns;
   constant INPUT_BYTE_WIDTH  : natural := (INPUT_DATA_WIDTH + 7) / 8;
   constant OUTPUT_BYTE_WIDTH : natural := (OUTPUT_DATA_WIDTH + 7) / 8;
-  constant AXI_TID_WIDTH     : natural := 8;
+  constant AXI_TID_WIDTH     : natural := 0;
 
   constant TEST_FRAMES : positive := 64;
 
