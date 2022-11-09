@@ -96,7 +96,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal m_tready           : std_logic := '1';
   signal m_tvalid           : std_logic;
   signal m_tdata            : std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
-  signal m_tkeep            : std_logic_vector(INPUT_BYTE_WIDTH - 1 downto 0);
+  --signal m_tkeep            : std_logic_vector(INPUT_BYTE_WIDTH - 1 downto 0);
   signal m_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
   --signal m_tlast            : std_logic;
   signal m_data_valid       : boolean;
@@ -104,7 +104,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal s_tready           : std_logic;
   signal s_tvalid           : std_logic;
   signal s_tdata            : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
-  signal s_tkeep            : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
+  --signal s_tkeep            : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
   --signal s_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
   --signal s_tlast            : std_logic;
   signal s_data_valid       : boolean;
@@ -126,14 +126,14 @@ begin
       -- AXI stream input
       s_tready => m_tready,
       s_tdata  => m_tdata,
-      s_tkeep  => m_tkeep,
+      --s_tkeep  => m_tkeep,
       --s_tid    => m_tid,
       s_tvalid => m_tvalid,
       --s_tlast  => m_tlast,
       -- AXI stream output
       m_tready => s_tready,
       m_tdata  => s_tdata,
-      m_tkeep  => s_tkeep,
+      --m_tkeep  => s_tkeep,
       --m_tid    => s_tid,
       m_tvalid => s_tvalid);
       --m_tlast  => s_tlast);
@@ -150,7 +150,7 @@ begin
       -- AXI stream output
       m_tready => m_tready,
       m_tdata  => m_tdata,
-      m_tkeep  => m_tkeep,
+      --m_tkeep  => m_tkeep,
       m_tid    => m_tid,
       m_tvalid => m_tvalid);
       --m_tlast  => m_tlast);
@@ -335,19 +335,19 @@ begin
         --     failed := True;
         --   end if;
 
-          if mask /= s_tkeep then
-            warning(
-              logger,
-              sformat(
-                "TKEEP ERROR @ frame %d, word %d: Got %r, expected %r",
-                fo(frame_cnt),
-                fo(word_cnt),
-                fo(s_tkeep),
-                fo(mask)
-              )
-            );
-            failed := True;
-          end if;
+        --   if mask /= s_tkeep then
+        --     warning(
+        --       logger,
+        --       sformat(
+        --         "TKEEP ERROR @ frame %d, word %d: Got %r, expected %r",
+        --         fo(frame_cnt),
+        --         fo(word_cnt),
+        --         fo(s_tkeep),
+        --         fo(mask)
+        --       )
+        --     );
+        --     failed := True;
+        --   end if;
 
 /*          if (last and s_tlast /= '1') or (not last and s_tlast /= '0') then
             warning(
