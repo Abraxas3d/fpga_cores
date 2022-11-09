@@ -135,6 +135,7 @@ architecture axi_embiggener of axi_embiggener is
 
   type state is (In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3);
   signal current_state, next_state : state; 
+  signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
 
 
 
@@ -151,7 +152,6 @@ begin
   g_upsize : if INPUT_DATA_WIDTH < OUTPUT_DATA_WIDTH generate -- {{
     -- AI abraxas3d to find out more about generate - thinking it's always with a test
     
-    signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
    
   begin
 
