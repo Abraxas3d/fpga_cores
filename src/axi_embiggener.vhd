@@ -44,7 +44,7 @@ entity axi_embiggener is
     s_tdata  : in  std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
     s_tkeep  : in  std_logic_vector((INPUT_DATA_WIDTH + 7) / 8 - 1 downto 0) := (others => 'U');
     s_tvalid : in  std_logic;
-    s_tlast  : in  std_logic;
+    --s_tlast  : in  std_logic;
     -- AXI stream output
     m_tready : in  std_logic;
     m_tdata  : out std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);

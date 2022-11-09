@@ -98,7 +98,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal m_tdata            : std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
   signal m_tkeep            : std_logic_vector(INPUT_BYTE_WIDTH - 1 downto 0);
   signal m_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-  signal m_tlast            : std_logic;
+  --signal m_tlast            : std_logic;
   signal m_data_valid       : boolean;
 
   signal s_tready           : std_logic;
@@ -106,7 +106,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal s_tdata            : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
   signal s_tkeep            : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
   signal s_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-  signal s_tlast            : std_logic;
+  --signal s_tlast            : std_logic;
   signal s_data_valid       : boolean;
 
 begin
@@ -129,14 +129,14 @@ begin
       s_tkeep  => m_tkeep,
       s_tid    => m_tid,
       s_tvalid => m_tvalid,
-      s_tlast  => m_tlast,
+      --s_tlast  => m_tlast,
       -- AXI stream output
       m_tready => s_tready,
       m_tdata  => s_tdata,
       m_tkeep  => s_tkeep,
       m_tid    => s_tid,
       m_tvalid => s_tvalid,
-      m_tlast  => s_tlast);
+      --m_tlast  => s_tlast);
 
   axi_stream_write : entity fpga_cores_sim.axi_stream_bfm
     generic map (
@@ -153,7 +153,7 @@ begin
       m_tkeep  => m_tkeep,
       m_tid    => m_tid,
       m_tvalid => m_tvalid,
-      m_tlast  => m_tlast);
+      --m_tlast  => m_tlast);
 
   ------------------------------
   -- Asynchronous assignments --
@@ -303,7 +303,7 @@ begin
         constant data : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
         constant mask : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
         constant id   : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-        constant last : boolean := False) is
+        --constant last : boolean := False) is
       begin
           wait until s_tvalid = '1' and s_tready = '1' and rising_edge(clk);
 
@@ -349,7 +349,7 @@ begin
             failed := True;
           end if;
 
-          if (last and s_tlast /= '1') or (not last and s_tlast /= '0') then
+/*          if (last and s_tlast /= '1') or (not last and s_tlast /= '0') then
             warning(
               logger,
               sformat(
@@ -361,7 +361,7 @@ begin
               )
             );
             failed := True;
-          end if;
+          end if; */
 
           word_cnt  := word_cnt + 1;
 
