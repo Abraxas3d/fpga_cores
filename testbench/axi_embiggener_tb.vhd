@@ -332,8 +332,8 @@ begin
         --         fo(id)
         --       )
         --     );
-            failed := True;
-          end if;
+        --     failed := True;
+        --   end if;
 
           if mask /= s_tkeep then
             warning(
