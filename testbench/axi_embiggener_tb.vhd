@@ -105,7 +105,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal s_tvalid           : std_logic;
   signal s_tdata            : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
   signal s_tkeep            : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
-  signal s_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
+  --signal s_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
   --signal s_tlast            : std_logic;
   signal s_data_valid       : boolean;
 
@@ -127,14 +127,14 @@ begin
       s_tready => m_tready,
       s_tdata  => m_tdata,
       s_tkeep  => m_tkeep,
-      s_tid    => m_tid,
+      --s_tid    => m_tid,
       s_tvalid => m_tvalid,
       --s_tlast  => m_tlast,
       -- AXI stream output
       m_tready => s_tready,
       m_tdata  => s_tdata,
       m_tkeep  => s_tkeep,
-      m_tid    => s_tid,
+      --m_tid    => s_tid,
       m_tvalid => s_tvalid);
       --m_tlast  => s_tlast);
 
@@ -321,17 +321,17 @@ begin
             failed := True;
           end if;
 
-          if id /= s_tid then
-            warning(
-              logger,
-              sformat(
-                "TID   ERROR @ frame %d, word %d: Got %r, expected %r",
-                fo(frame_cnt),
-                fo(word_cnt),
-                fo(s_tid),
-                fo(id)
-              )
-            );
+        --   if id /= s_tid then
+        --     warning(
+        --       logger,
+        --       sformat(
+        --         "TID   ERROR @ frame %d, word %d: Got %r, expected %r",
+        --         fo(frame_cnt),
+        --         fo(word_cnt),
+        --         fo(s_tid),
+        --         fo(id)
+        --       )
+        --     );
             failed := True;
           end if;
 
