@@ -152,7 +152,7 @@ begin
       m_tdata  => m_tdata,
       m_tkeep  => m_tkeep,
       m_tid    => m_tid,
-      m_tvalid => m_tvalid,
+      m_tvalid => m_tvalid);
       --m_tlast  => m_tlast);
 
   ------------------------------
