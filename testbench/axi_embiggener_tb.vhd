@@ -135,7 +135,7 @@ begin
       m_tdata  => s_tdata,
       m_tkeep  => s_tkeep,
       m_tid    => s_tid,
-      m_tvalid => s_tvalid,
+      m_tvalid => s_tvalid);
       --m_tlast  => s_tlast);
 
   axi_stream_write : entity fpga_cores_sim.axi_stream_bfm
@@ -302,7 +302,7 @@ begin
       procedure check_word (
         constant data : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
         constant mask : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
-        constant id   : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
+        constant id   : std_logic_vector(AXI_TID_WIDTH - 1 downto 0) is
         --constant last : boolean := False) is
       begin
           wait until s_tvalid = '1' and s_tready = '1' and rising_edge(clk);
