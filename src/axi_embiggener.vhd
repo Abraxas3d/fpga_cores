@@ -217,7 +217,7 @@ begin
     end process combinatorial;
 
 
-    memory:process(rst, clk)
+    memory:process(rst, clk)  -- In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3
     begin
       if rising_edge(clk) then
         if rst = '1' then
@@ -235,6 +235,8 @@ begin
               big_buffer(3*INPUT_DATA_WIDTH - 1 downto 2*INPUT_DATA_WIDTH) <= s_tdata;
             when Load3 => 
               big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
+            when others =>
+              NULL;
           end case;
           current_state <= next_state;
         end if;
