@@ -167,6 +167,7 @@ begin
         when In_Reset =>
           s_tready_i <= '0';
           m_tvalid_i <= '0';
+            next_state <= Empty;
         when Empty => 
           s_tready_i <= '1';
           m_tvalid_i <= '0';
@@ -224,7 +225,7 @@ begin
           s_tready_i <= '0';
           m_tvalid_i <= '0';
           current_state <= In_Reset;
-          next_state <= Empty;
+          --next_state <= Empty;
         else
           case current_state is
             when Load0 =>
