@@ -117,8 +117,8 @@ begin
   dut : entity fpga_cores.axi_embiggener
     generic map (
       INPUT_DATA_WIDTH    => INPUT_DATA_WIDTH,
-      OUTPUT_DATA_WIDTH   => OUTPUT_DATA_WIDTH,
-      AXI_TID_WIDTH       => AXI_TID_WIDTH)
+      OUTPUT_DATA_WIDTH   => OUTPUT_DATA_WIDTH)
+      --AXI_TID_WIDTH       => AXI_TID_WIDTH)
     port map (
       -- Usual ports
       clk      => clk,
