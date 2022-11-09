@@ -128,23 +128,18 @@ architecture axi_embiggener of axi_embiggener is
   -------------
   -- Signals --
   -------------
-  signal s_data_valid : std_logic;
-  signal m_data_valid : std_logic;
   signal m_tdata_i    : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
   signal s_tready_i   : std_logic;
   signal m_tvalid_i   : std_logic;
 
 
-
-
-
-
-
-
+  type state is (In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3);
+  signal current_state, next_state : state; 
 
 
 
 begin
+
 
   g_not_upsize : if INPUT_DATA_WIDTH >= OUTPUT_DATA_WIDTH or INPUT_DATA_WIDTH mod 8 /= 0 or OUTPUT_DATA_WIDTH mod INPUT_DATA_WIDTH /= 0 generate -- {{
     assert False
@@ -157,132 +152,102 @@ begin
     -- AI abraxas3d to find out more about generate - thinking it's always with a test
     
     signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
-    signal input_valid_bytes    : unsigned(numbits(2*INPUT_BYTE_WIDTH) - 1 downto 0);
-    signal big_buffer_next      : std_logic_array_t(0 to OUTPUT_DATA_WIDTH/INPUT_DATA_WIDTH - 1)(INPUT_DATA_WIDTH - 1 downto 0);
-    -- AI abraxas3d can we have mixed types of indices in the std_logic_array_t? hmm?
-
-
+   
   begin
-
-
-    -- Generate the number of bytes valid depending on the value of TKEEP
-    input_valid_bytes <= tkeep_to_byte_count(s_tkeep) when s_tvalid and s_tlast else (others => 'U');
-
 
     ---------------
     -- Processes --
     ---------------
-    process(clk)
-      variable tmp_bit_buffer : std_logic_vector(bit_buffer'range);
-      variable tmp_size       : natural range 0 to tmp_bit_buffer'length;
-      variable tmp_flush_req  : boolean;
+
+    combinatorial:process(current_state, s_tvalid, m_tready) -- In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3
+
+    begin
+      next_state <= current_state; -- default value for next_state
+      case current_state is
+        when Empty => 
+          s_tready_i <= '1';
+          m_tvalid_i <= '0';
+          if s_tvalid = '1' then
+            next_state <= Load0;
+          end if;
+        when Load0 =>
+          s_tready_i = '0';
+          m_tvalid_i = '0';
+          next_state <= Have0;
+        when Have0 =>
+          s_tready_i <= '1';
+          m_tvalid_i <= '0';
+          if s_tvalid = '1' then
+            next_state <= Load1;
+          end if;
+        when Load1 =>
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
+          next_state <= Have1;
+        when Have1 =>
+          s_tready_i <= '1';
+          m_tvalid_i <= '0';
+          if s_tvalid = '1' then
+            next_state <= Load2;
+          end if;
+        when Load2 =>
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
+          next_state <= Have2;
+        when Have2 =>
+          s_tready_i <= '1';
+          m_tvalid_i <= '0';
+          if s_tvalid = '1' then
+            next_state <= Load3;
+          end if;
+        when Load3 => 
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
+          next_state <= Have3;
+        when Have3 =>
+          s_tready_i <= '0';  -- this is not set because we cannot accept input at this time
+          m_tvalid_i <= '1';
+          if m_tready = '1' then   -- condition for the output to be accepted
+            next_state <= Empty;
+          end if;
+      end case;
+    end process combinatorial;
+
+
+    memory:process(rst, clk)
     begin
       if rising_edge(clk) then
-
-        tmp_bit_buffer := bit_buffer;
-        tmp_size       := to_integer(size);
-        tmp_flush_req  := flush_req;
-
-        -- De-assert tvalid when data in being sent and no more data, except when we're
-        -- flushing the output buffer
-        if m_tready = '1' and (tmp_size >= OUTPUT_DATA_WIDTH or tmp_flush_req) then
-          if m_tlast_i = '1' then
-            tmp_flush_req := False;
-          end if;
-          m_tvalid_i <= '0';
-          m_tlast_i  <= '0';
-        end if;
-
-        -- Handling incoming data
-        if s_data_valid = '1' then
-          s_tready_i <= '0'; -- Each incoming word will generate at least 1 output word
-
-          -- Add the incoming data to the relevant bit buffer
-          -- Need to assign data before tmp_size (it's a variable)
-          assert tmp_size <= OUTPUT_DATA_WIDTH;
-          tmp_bit_buffer := bit_buffer_next(tmp_size);
-          tmp_size       := tmp_size + input_valid_bits;
-
-          dbg_write_bit_buffer <= tmp_bit_buffer;
-          dbg_write_size       <= tmp_size;
-
-          -- Upon receiving the last input word, clear the flush request
-          if s_tlast = '1' then
-            tmp_flush_req := True;
-          end if;
-
-        end if;
-
-        if m_data_valid = '1' then
-          -- Consume the data we wrote
-          tmp_bit_buffer := (OUTPUT_DATA_WIDTH - 1 downto 0 => 'U') & tmp_bit_buffer(tmp_bit_buffer'length - 1 downto OUTPUT_DATA_WIDTH);
-          m_tkeep        <= (others => '0');
-
-          -- Clear up for the next frame
-          if m_tlast_i = '1' then
-            tmp_size      := 0;
-            tmp_flush_req := False;
-          else
-            tmp_size      := tmp_size - OUTPUT_DATA_WIDTH;
-          end if;
-
-          dbg_read_bit_buffer <= tmp_bit_buffer;
-          dbg_read_size       <= tmp_size;
-        end if;
-
-        if tmp_size >= OUTPUT_DATA_WIDTH or tmp_flush_req then
-          m_tvalid_i <= '1';
-          m_tdata_i  <= tmp_bit_buffer(OUTPUT_DATA_WIDTH - 1 downto 0);
-          m_tkeep    <= (others => '0');
-
-          -- Work out if the next word will be the last and fill in the bit mask
-          -- appropriately
-          if tmp_size <= OUTPUT_DATA_WIDTH and tmp_flush_req then
-            m_tlast_i <= '1';
-            if OUTPUT_DATA_WIDTH < 8 then
-              m_tkeep <= (others => '1');
-            elsif HANDLE_TKEEP then
-              m_tkeep <= get_tkeep((tmp_size + 7) / 8);
-            end if;
-          end if;
-        end if;
-
-        -- Input should always be ready if there's room for data to be received, unless
-        -- we're flushing the buffer. In this case, accepting more data will mess up with
-        -- the tracking of how much data we still have to write
-        if tmp_bit_buffer'length - tmp_size >= INPUT_DATA_WIDTH and not tmp_flush_req then
-          s_tready_i <= '1';
-        end if;
-
-        bit_buffer       <= tmp_bit_buffer;
-        size <= to_unsigned(tmp_size, size'length);
-        flush_req <= tmp_flush_req;
-
         if rst = '1' then
-          s_tready_i     <= '0';
-          m_tvalid_i     <= '0';
-          m_tlast_i      <= '0';
-          dbg_write_size <= 0;
-          dbg_read_size  <= 0;
-          size           <= (others => '0');
-          flush_req      <= False;
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
+          current_state <= In_Reset;
+          next_state <= Empty;
+        else
+          case current_state is
+            when Load0 =>
+              big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
+            when Load1 =>
+              big_buffer(2*INPUT_DATA_WIDTH - 1 downto INPUT_DATA_WIDTH) <= s_tdata;
+            when Load2 =>
+              big_buffer(3*INPUT_DATA_WIDTH - 1 downto 2*INPUT_DATA_WIDTH) <= s_tdata;
+            when Load3 => 
+              big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
+          end case;
+          current_state <= next_state;
         end if;
       end if;
-    end process;
+    end process memory;
+
 
   end generate g_upsize; -- }}
 
-
--- AI learn how to do pull requests in Visual Studio Code with the neat extensions
 
 
   ------------------------------
   -- Asynchronous assignments --
   ------------------------------
-  s_data_valid <= s_tready_i and s_tvalid and not rst;
-  m_data_valid <= m_tready and m_tvalid_i and not rst;
 
-  m_tdata      <= m_tdata_i when m_tvalid_i = '1' else (others => 'U');
+  m_tdata      <= big_buffer when m_tvalid_i = '1' else (others => 'U');
   s_tready     <= s_tready_i;
   m_tvalid     <= m_tvalid_i;
 
