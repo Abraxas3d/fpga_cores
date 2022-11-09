@@ -392,9 +392,9 @@ begin
               fo(exp_tkeep)
             )
           );
-          check_word(resized_data(i), exp_tkeep, frame.id, True);
+          check_word(resized_data(i), exp_tkeep, frame.id);
         else
-          check_word(resized_data(i), (others => '0'), frame.id, False);
+          check_word(resized_data(i), (others => '0'), frame.id);
         end if;
       end loop;
 
