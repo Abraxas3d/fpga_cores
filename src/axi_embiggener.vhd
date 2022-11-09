@@ -164,6 +164,9 @@ begin
     begin
       next_state <= current_state; -- default value for next_state
       case current_state is
+        when In_Reset =>
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
         when Empty => 
           s_tready_i <= '1';
           m_tvalid_i <= '0';
