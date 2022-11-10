@@ -222,8 +222,8 @@ begin
     begin
       if rising_edge(clk) then
         if rst = '1' then
-          s_tready_i <= '0';
-          m_tvalid_i <= '0';
+          --s_tready_i <= '0';
+          --m_tvalid_i <= '0';
           current_state <= In_Reset;
           --next_state <= Empty;
         else
