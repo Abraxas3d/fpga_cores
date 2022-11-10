@@ -223,6 +223,7 @@ begin
               if m_tready = '1' then
                 big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
                 current_state <= next_state;
+              end if;
             when others =>
               NULL;
           end case;
