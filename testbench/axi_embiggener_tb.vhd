@@ -218,7 +218,8 @@ begin
         info(sformat("Writing frame %d", fo(i)));
         test_frame(
           id => rand.RandSlv(AXI_TID_WIDTH),
-          data => random(4*rand.RandInt(INPUT_BYTE_WIDTH*OUTPUT_BYTE_WIDTH) + 1)
+          --data => random(4*rand.RandInt(INPUT_BYTE_WIDTH*OUTPUT_BYTE_WIDTH) + 1)
+          data => random(4*rand.RandInt(INPUT_BYTE_WIDTH*OUTPUT_BYTE_WIDTH))
         );
       end loop;
 
