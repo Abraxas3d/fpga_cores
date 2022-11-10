@@ -122,7 +122,7 @@ def addTests(cli, seed):
     addAxiWidthConverterTests(
         cli.library("tb").entity("axi_stream_width_converter_tb"), seed
     )
-    addAxiEmbiggenerTests(cli.library("tb"),entity("axi_embiggener_tb"), seed)
+    addAxiEmbiggenerTests(cli.library("tb").entity("axi_embiggener_tb"), seed)
     addAxiArbiterTests(cli.library("tb").entity("axi_stream_arbiter_tb"), seed)
 
     # Add seed to other testbenches
