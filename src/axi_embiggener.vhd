@@ -44,7 +44,7 @@ entity axi_embiggener is
     s_tdata  : in  std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
     s_tkeep  : in  std_logic_vector((INPUT_DATA_WIDTH + 7) / 8 - 1 downto 0) := (others => 'U');
     s_tvalid : in  std_logic;
-    s_tlast  : in  std_logic;
+    --s_tlast  : in  std_logic;
     -- AXI stream output
     m_tready : in  std_logic;
     m_tdata  : out std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
@@ -133,8 +133,9 @@ architecture axi_embiggener of axi_embiggener is
   signal m_tvalid_i   : std_logic;
 
 
-  type state is (In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3);
+  type state is (In_Reset, Empty, Have0, Have1, Have2, Have3);
   signal current_state, next_state : state; 
+  signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
 
 
 
@@ -151,7 +152,6 @@ begin
   g_upsize : if INPUT_DATA_WIDTH < OUTPUT_DATA_WIDTH generate -- {{
     -- AI abraxas3d to find out more about generate - thinking it's always with a test
     
-    signal big_buffer           : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
    
   begin
 
@@ -164,76 +164,74 @@ begin
     begin
       next_state <= current_state; -- default value for next_state
       case current_state is
+        when In_Reset =>
+          s_tready_i <= '0';
+          m_tvalid_i <= '0';
+            next_state <= Empty;
         when Empty => 
           s_tready_i <= '1';
           m_tvalid_i <= '0';
           if s_tvalid = '1' then
-            next_state <= Load0;
+            next_state <= Have0;
           end if;
-        when Load0 =>
-          s_tready_i = '0';
-          m_tvalid_i = '0';
-          next_state <= Have0;
         when Have0 =>
           s_tready_i <= '1';
           m_tvalid_i <= '0';
           if s_tvalid = '1' then
-            next_state <= Load1;
+            next_state <= Have1;
           end if;
-        when Load1 =>
-          s_tready_i <= '0';
-          m_tvalid_i <= '0';
-          next_state <= Have1;
         when Have1 =>
           s_tready_i <= '1';
           m_tvalid_i <= '0';
           if s_tvalid = '1' then
-            next_state <= Load2;
+            next_state <= Have2;
           end if;
-        when Load2 =>
-          s_tready_i <= '0';
-          m_tvalid_i <= '0';
-          next_state <= Have2;
         when Have2 =>
           s_tready_i <= '1';
           m_tvalid_i <= '0';
           if s_tvalid = '1' then
-            next_state <= Load3;
+            next_state <= Have3;
           end if;
-        when Load3 => 
-          s_tready_i <= '0';
-          m_tvalid_i <= '0';
-          next_state <= Have3;
         when Have3 =>
-          s_tready_i <= '0';  -- this is not set because we cannot accept input at this time
+          s_tready_i <= m_tready;
           m_tvalid_i <= '1';
-          if m_tready = '1' then   -- condition for the output to be accepted
-            next_state <= Empty;
-          end if;
+          next_state <= Have0;
       end case;
     end process combinatorial;
 
 
-    memory:process(rst, clk)
+    memory:process(rst, clk)  -- In_Reset, Empty, Have0, Have1, Have2, Have3
     begin
       if rising_edge(clk) then
         if rst = '1' then
-          s_tready_i <= '0';
-          m_tvalid_i <= '0';
+          --s_tready_i <= '0';
+          --m_tvalid_i <= '0';
           current_state <= In_Reset;
-          next_state <= Empty;
+          --next_state <= Empty;
         else
           case current_state is
-            when Load0 =>
+            when In_Reset =>
+              current_state <= next_state;
+            when Empty =>
               big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
-            when Load1 =>
+              current_state <= next_state;
+            when Have0 =>
               big_buffer(2*INPUT_DATA_WIDTH - 1 downto INPUT_DATA_WIDTH) <= s_tdata;
-            when Load2 =>
+              current_state <= next_state;
+            when Have1 =>
               big_buffer(3*INPUT_DATA_WIDTH - 1 downto 2*INPUT_DATA_WIDTH) <= s_tdata;
-            when Load3 => 
+              current_state <= next_state;
+            when Have2 =>
               big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
+              current_state <= next_state;
+            when Have3 => 
+              if m_tready = '1' then
+                big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
+                current_state <= next_state;
+              end if;
+            when others =>
+              NULL;
           end case;
-          current_state <= next_state;
         end if;
       end if;
     end process memory;
