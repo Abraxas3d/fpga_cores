@@ -210,6 +210,10 @@ begin
           --next_state <= Empty;
         else
           case current_state is
+            when In_Reset =>
+              current_state <= next_state;
+            when Empty =>
+              current_state <= next_state;
             when Have0 =>
               big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
               current_state <= next_state;
