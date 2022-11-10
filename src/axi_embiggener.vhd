@@ -200,7 +200,7 @@ begin
     end process combinatorial;
 
 
-    memory:process(rst, clk)  -- In_Reset, Empty, Load0, Have0, Load1, Have1, Load2, Have2, Load3, Have3
+    memory:process(rst, clk)  -- In_Reset, Empty, Have0, Have1, Have2, Have3
     begin
       if rising_edge(clk) then
         if rst = '1' then
@@ -213,19 +213,20 @@ begin
             when In_Reset =>
               current_state <= next_state;
             when Empty =>
-              current_state <= next_state;
-            when Have0 =>
               big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
               current_state <= next_state;
-            when Have1 =>
+            when Have0 =>
               big_buffer(2*INPUT_DATA_WIDTH - 1 downto INPUT_DATA_WIDTH) <= s_tdata;
               current_state <= next_state;
-            when Have2 =>
+            when Have1 =>
               big_buffer(3*INPUT_DATA_WIDTH - 1 downto 2*INPUT_DATA_WIDTH) <= s_tdata;
+              current_state <= next_state;
+            when Have2 =>
+              big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
               current_state <= next_state;
             when Have3 => 
               if m_tready = '1' then
-                big_buffer(4*INPUT_DATA_WIDTH - 1 downto 3*INPUT_DATA_WIDTH) <= s_tdata;
+                big_buffer(INPUT_DATA_WIDTH - 1 downto 0) <= s_tdata;
                 current_state <= next_state;
               end if;
             when others =>
