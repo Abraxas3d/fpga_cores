@@ -42,16 +42,15 @@ entity axi_embiggener is
     -- AXI stream input
     s_tready : out std_logic;
     s_tdata  : in  std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
-    s_tkeep  : in  std_logic_vector((INPUT_DATA_WIDTH + 7) / 8 - 1 downto 0) := (others => 'U');
     s_tvalid : in  std_logic;
-    --s_tlast  : in  std_logic;
+    s_tlast  : in  std_logic;
     -- AXI stream output
     m_tready : in  std_logic;
     m_tdata  : out std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
-    m_tvalid : out std_logic);
+    m_tvalid : out std_logic;
     -- There are other signals we do not know how to handle yet
     -- dma_xfer_req : out std_logic;
-    -- m_tlast : out std_logic; -- encoder outputs this signal, but do we really need it?
+    m_tlast : out std_logic); -- encoder outputs this signal but we set it to 0
 end axi_embiggener;
 
 architecture axi_embiggener of axi_embiggener is
@@ -248,6 +247,7 @@ begin
   m_tdata      <= big_buffer when m_tvalid_i = '1' else (others => 'U');
   s_tready     <= s_tready_i;
   m_tvalid     <= m_tvalid_i;
+  m_tlast      <= '0';
 
 
   -- ---------------
