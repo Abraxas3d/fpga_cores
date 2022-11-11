@@ -98,7 +98,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal m_tdata            : std_logic_vector(INPUT_DATA_WIDTH - 1 downto 0);
   --signal m_tkeep            : std_logic_vector(INPUT_BYTE_WIDTH - 1 downto 0);
   signal m_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-  --signal m_tlast            : std_logic;
+  signal m_tlast            : std_logic;
   signal m_data_valid       : boolean;
 
   signal s_tready           : std_logic;
@@ -106,7 +106,7 @@ architecture axi_embiggener_tb of axi_embiggener_tb is
   signal s_tdata            : std_logic_vector(OUTPUT_DATA_WIDTH - 1 downto 0);
   --signal s_tkeep            : std_logic_vector(OUTPUT_BYTE_WIDTH - 1 downto 0);
   --signal s_tid              : std_logic_vector(AXI_TID_WIDTH - 1 downto 0);
-  --signal s_tlast            : std_logic;
+  signal s_tlast            : std_logic;
   signal s_data_valid       : boolean;
 
 begin
