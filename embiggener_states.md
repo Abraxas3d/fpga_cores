@@ -4,26 +4,20 @@ This VHDL entity translates a 32-bit-wide AXI-S interface (DMA) to the 128-bit-w
 
 ```mermaid
 stateDiagram-v2
+state "InReset:\nRST signal holding us in reset\ns_tready = 0\nm_tvalid =" as inreset
 state "Empty:\nNo input data in the output register\ns_tready = 1\nm_tvalid = 0" as empty
-state "Load0:\nStrobing input data into the LS bits of output register\ns_tready = 0\nm_tvalid = 0" as load0
 state "Have0:\nOne word in the output register, awaiting second word\ns_tready = 1\nm_tvalid = 0" as have0
-state "Load1:\nStrobing input data into the next bits of output register\ns_tready = 0\nm_tvalid = 0" as load1
 state "Have1:\nTwo words in the output register, awaiting third word\ns_tready = 1\nm_tvalid = 0" as have1
-state "Load2:\nStrobing input data into the next bits of output register\ns_tready = 0\nm_tvalid = 0" as load2
 state "Have2:\nThree words in the output register, awaiting fourth word\ns_tready = 1\nm_tvalid = 0" as have2
-state "Load3:\nStrobing input data into the MS bits of output register\ns_tready = 0\nm_tvalid = 0" as load3
-state "Have3:\nOutput register full, awaiting consumer\ns_tready = 0\nm_tvalid = 1" as have3
+state "Have3:\nOutput register full, maybe awaiting consumer\ns_tready = m_tready\nm_tvalid = 1" as have3
 
-[*] --> empty: Reset
-empty --> load0: s_tvalid high
-load0 --> have0
-have0 --> load1: s_tvalid high
-load1 --> have1
-have1 --> load2: s_tvalid high
-load2 --> have2
-have2 --> load3: s_tvalid high
-load3 --> have3
-have3 --> empty: m_tready high
+[*] --> inreset
+inreset --> empty: on clk if RST low
+empty --> have0: on clk if s_tvalid high\nload buffer[31..0]
+have0 --> have1: on clk if s_tvalid high\nload buffer[63..32]
+have1 --> have2: on clk if s_tvalid high\nload buffer[95..64]
+have2 --> have3: on clk if s_tvalid high\nload buffer[127..96]
+have3 --> have0: on clk if m_tready high\nload buffer[31..0]
 
 ```
 
