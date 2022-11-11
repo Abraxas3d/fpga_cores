@@ -135,7 +135,7 @@ begin
       m_tdata  => s_tdata,
       --m_tkeep  => s_tkeep,
       --m_tid    => s_tid,
-      m_tvalid => s_tvalid;
+      m_tvalid => s_tvalid,
       m_tlast  => s_tlast);
 
   axi_stream_write : entity fpga_cores_sim.axi_stream_bfm
