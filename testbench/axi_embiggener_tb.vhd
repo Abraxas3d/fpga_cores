@@ -129,14 +129,14 @@ begin
       --s_tkeep  => m_tkeep,
       --s_tid    => m_tid,
       s_tvalid => m_tvalid,
-      --s_tlast  => m_tlast,
+      s_tlast  => m_tlast,
       -- AXI stream output
       m_tready => s_tready,
       m_tdata  => s_tdata,
       --m_tkeep  => s_tkeep,
       --m_tid    => s_tid,
-      m_tvalid => s_tvalid);
-      --m_tlast  => s_tlast);
+      m_tvalid => s_tvalid;
+      m_tlast  => s_tlast);
 
   axi_stream_write : entity fpga_cores_sim.axi_stream_bfm
     generic map (
