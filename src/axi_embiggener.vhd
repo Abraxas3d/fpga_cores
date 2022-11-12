@@ -33,8 +33,7 @@ use work.common_pkg.all;
 entity axi_embiggener is
   generic (
     INPUT_DATA_WIDTH    : natural := 32;
-    OUTPUT_DATA_WIDTH   : natural := 128;
-    IGNORE_TKEEP        : boolean := False);
+    OUTPUT_DATA_WIDTH   : natural := 128);
   port (
     -- Usual ports
     clk      : in  std_logic;
@@ -60,10 +59,7 @@ architecture axi_embiggener of axi_embiggener is
   ---------------
   constant INPUT_BYTE_WIDTH  : natural := (INPUT_DATA_WIDTH + 7) / 8;
   constant OUTPUT_BYTE_WIDTH : natural := (OUTPUT_DATA_WIDTH + 7) / 8;
-  -- TKEEP is only supported if tdata is multiple of 8 bits and wider than 8 bits
-  constant HANDLE_TKEEP      : boolean := not IGNORE_TKEEP and           -- Force no tkeep handling
-                                          INPUT_DATA_WIDTH mod 8 = 0 and -- tdata must be a multiple of 8 bits
-                                          INPUT_DATA_WIDTH > 8;          -- tdata must be wider than 8 bits
+  
 
   ------------------
   -- Sub programs --
