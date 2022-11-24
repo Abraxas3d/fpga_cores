@@ -58,83 +58,177 @@ architecture Behavioral of decoder is
     signal input_data_d     : STD_LOGIC_VECTOR (7 downto 0);
     signal input_data_d_d   : STD_LOGIC_VECTOR (7 downto 0);
     signal counter_load     : STD_LOGIC;
+    signal counter_load_d   : STD_LOGIC;
     signal s_tlast_i        : STD_LOGIC;
     signal s_tvalid_i       : STD_LOGIC;
+    signal s_tvalid_i_d     : STD_LOGIC;
+    signal s_tvalid_i_d_d   : STD_LOGIC;
     signal s_tready_i       : STD_LOGIC;
+    signal saved_data       : STD_LOGIC_VECTOR (7 downto 0);
     signal output_data      : STD_LOGIC_VECTOR (7 downto 0); 
     signal m_tlast_i        : STD_LOGIC;
+    signal pre_tvalid       : STD_LOGIC;
     signal m_tvalid_i       : STD_LOGIC;
     signal m_tready_i       : STD_LOGIC;
+    signal m_tready_i_d     : STD_LOGIC;
     signal count            : STD_LOGIC_VECTOR (7 downto 0);
     signal all_ones         : STD_LOGIC_VECTOR(input_data'range) := (others => '1');
     signal all_zeros        : STD_LOGIC_VECTOR(input_data'range) := (others => '0');
-
+    signal case_255         : STD_LOGIC;
+    signal frame_sep        : STD_LOGIC;
+    signal frame_sep_d      : STD_LOGIC;
+    signal save_en          : STD_LOGIC;
+    signal use_saved        : STD_LOGIC;
  
 begin
    
         
     -- asynchronous assignments
-    m_tlast_i <= '1' when input_data = all_zeros else '0';
-    m_tlast <= m_tlast_i;
-    m_tvalid <= m_tvalid_i;
-    input_data <= s_tdata;
+    frame_sep <= '1' when input_data_d = all_zeros and s_tvalid_i_d = '1' else '0';
+    m_tlast <= frame_sep;
+    counter_load <= '1' when (input_data_d /= all_zeros and frame_sep_d = '1' and s_tvalid_i_d = '1') or (to_integer(unsigned(count)) = 1 and s_tvalid_i_d = '1') else '0';
+    m_tvalid <= pre_tvalid and s_tvalid_i_d_d;
+    s_tready <= m_tready_i;
+    save_en <= m_tready_i_d and not m_tready_i;
     m_tdata <= output_data;
-    counter_load <= '1' when count = all_zeros or to_integer(unsigned(count)) = 1 else '0';
-
+    input_data <= s_tdata;
+    s_tvalid_i <= s_tvalid;
+    m_tready_i <= m_tready;
+    
+    
 -- processes
 
-    count_and_load : process (rst,clk)
-    --variables would go here
+
+
+    set_case_255 : process (rst, clk)
     begin
-        if rst='1' then
-            count <= (others => '0');
-            output_data <= (others => '0');
-        -- EVERY signal assigned below must be reset here !
+        if rst = '1' then
+            case_255 <= '0';
         elsif rising_edge(clk) then
-            if counter_load = '1' then
-                count <= input_data;
-                output_data <= all_zeros;
-            else
-                count <= STD_LOGIC_VECTOR(unsigned(count) - 1);
-                output_data <= input_data;
+            if counter_load = '1' and input_data_d = all_ones then
+                case_255 <= '1';
+            elsif counter_load = '1' and input_data_d /= all_ones then
+                case_255 <= '0';
             end if;
         end if;
-    end process count_and_load;
+    end process set_case_255;
+
+
+    
+    delay_s_tvalid : process (rst, clk)
+    begin
+        if rst = '1' then
+            s_tvalid_i_d <= '0';
+            s_tvalid_i_d_d <= '0';
+        elsif rising_edge(clk) then
+            s_tvalid_i_d <= s_tvalid_i;
+            s_tvalid_i_d_d <= s_tvalid_i_d;
+        end if;
+    end process delay_s_tvalid;
     
     
     
+    create_pre_tvalid : process (rst, clk)
+    begin
+        if rst = '1' then
+            counter_load_d <= '0';
+            pre_tvalid <= '0';
+        elsif rising_edge(clk) then
+            if s_tvalid_i_d = '1' then
+                counter_load_d <= counter_load;
+                if counter_load_d = '1' then
+                    pre_tvalid <= '1';
+                end if;    
+            end if;
+            if frame_sep = '1' then 
+                pre_tvalid <= '0';
+            end if;
+            if counter_load = '1' and case_255 = '1' then
+                pre_tvalid <= '0';
+            end if;
+        end if;
+    end process create_pre_tvalid;
+     
+     
     
-    create_mtvalid : process (rst,clk)
+    create_saved_and_used_data : process (rst, clk)
+    begin
+        if rst = '1' then
+            saved_data <= (others => '0');
+            use_saved <= '0';
+        elsif rising_edge(clk) then
+            if save_en = '1' then
+                saved_data <= input_data_d;
+                use_saved <= '1';
+            elsif m_tready_i = '1' then
+                use_saved <= '0';
+            end if;
+        end if;
+    end process create_saved_and_used_data;
+    
+    
+    
+    delay_m_tready_i : process (rst, clk)
+    begin
+        if rst = '1' then
+            m_tready_i_d <= '0';
+        elsif rising_edge(clk) then
+            m_tready_i_d <= m_tready_i;
+        end if;
+    end process delay_m_tready_i;
+    
+
+
+    set_counter : process (rst,clk)
     --variables would go here
     begin
         if rst = '1' then
-            m_tvalid_i <= '0';
-            --every signal assigned below must be set here
+            count <= (others => '0');
+            frame_sep_d <= '0';
+            --every signal we assign must be reset here
         elsif rising_edge(clk) then
-            if input_data_d_d = all_zeros then
-                m_tvalid_i <= '1';
-            elsif input_data = all_zeros then
-                m_tvalid_i <= '0';
+            if s_tvalid_i_d = '1' then
+                frame_sep_d <= frame_sep;
+                if counter_load = '1' then
+                    count <= input_data_d;
+                elsif count /= all_zeros then
+                    count <= STD_LOGIC_VECTOR(unsigned(count) - 1);
+                end if;
             end if;
         end if;
-    end process create_mtvalid;
+    end process set_counter;
     
     
     
+    create_output : process (rst, clk)
+    begin
+        if rst = '1' then
+            output_data <= (others => '0');
+        elsif rising_edge(clk) then
+            if use_saved = '1' and m_tready_i = '1' then
+                output_data <= saved_data;
+            elsif counter_load = '1' then
+                output_data <= all_zeros;
+            else 
+                output_data <= input_data_d;
+            end if;
+        end if;
+    end process create_output;
     
+  
     
-    versions_of_input_data : process (rst,clk)
+    selective_delay_of_input_data : process (rst,clk)
     --variables would go here
     begin
         if rst = '1' then
             input_data_d <= all_zeros;
-            input_data_d_d <= all_zeros;
             --every signal assigned below must be set here
         elsif rising_edge(clk) then
-            input_data_d <= input_data;
-            input_data_d_d <= input_data_d;
+            if s_tvalid_i = '1' then
+                input_data_d <= input_data;
+            end if;    
         end if;
-    end process versions_of_input_data;
+    end process selective_delay_of_input_data;
 
 
 end Behavioral;
