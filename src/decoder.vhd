@@ -11,8 +11,7 @@
 --              https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
 -- 
 -- Dependencies: 
---
--- Additional Comments: This work is Open Source and licensed using CERN OHL v2.0
+--Additional Comments: This work is Open Source and licensed using CERN OHL v2.0
 -- 
 ----------------------------------------------------------------------------------
 
