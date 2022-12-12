@@ -161,6 +161,3 @@ begin
 end process p_read;       
 
 end Behavioral;
-
-
-
